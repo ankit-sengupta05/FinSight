@@ -1,8 +1,8 @@
-﻿name: CI — Lint, Compile and Secret Check
+﻿name: CI -- Lint, Compile and Secret Check
 
 on:
   push:
-    branches: [ 'main', 'dev' ]
+    branches: ["main", "dev"]
   pull_request:
 
 jobs:
@@ -15,23 +15,23 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: "1.21"
 
       - name: Install pre-commit and flake8
         run: |
@@ -41,12 +41,14 @@ jobs:
       - name: Run all pre-commit hooks
         run: pre-commit run --all-files
 
-      - name: Check for secret patterns in source
+      - name: Check for raw secrets in source
         run: |
           if grep -rE \
             "(API_KEY|SECRET_KEY|PRIVATE_KEY|PASSWORD|AUTH_TOKEN)=[^*\s]+" \
             --include="*.js" --include="*.ts" --include="*.py" \
-            --include="*.java" --include="*.go" --exclude-dir=node_modules .; then
+            --include="*.java" --include="*.go" \
+            --exclude-dir=node_modules \
+            --exclude-dir=.git .; then
             echo "[FAIL] Raw secrets detected in source files!"
             exit 1
           else
