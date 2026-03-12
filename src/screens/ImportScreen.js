@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   TextInput, Alert, ActivityIndicator, ScrollView
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { parseSMS } from '../utils/smsParser';
 import { saveTransaction } from '../utils/transactionStore';
@@ -17,6 +18,7 @@ const SAMPLE_SMS = [
 
 export default function ImportScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation();
   const [smsText, setSmsText] = useState('');
   const [parsed, setParsed] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -25,7 +27,10 @@ export default function ImportScreen() {
     if (!smsText.trim()) return;
     const result = parseSMS(smsText);
     if (!result) {
-      Alert.alert('Not Recognized', "This doesn't look like a bank debit SMS. Try a sample below.");
+      Alert.alert(
+        'Not Recognized',
+        "Doesn't look like a bank debit SMS. Try a sample below."
+      );
       return;
     }
     setParsed(result);
@@ -36,11 +41,22 @@ export default function ImportScreen() {
     setSaving(true);
     try {
       await saveTransaction(user.uid, parsed);
-      Alert.alert('✅ Saved!', 'Transaction added to your budget.');
       setSmsText('');
       setParsed(null);
+      // ✅ Navigate to Dashboard immediately after save
+      Alert.alert(
+        'Saved!',
+        'Transaction added successfully.',
+        [
+          {
+            text: 'View Dashboard',
+            onPress: () => navigation.navigate('Dashboard'),
+          },
+          { text: 'Add More', style: 'cancel' },
+        ]
+      );
     } catch (e) {
-      Alert.alert('Error', e.message);
+      Alert.alert('Error saving', e.message);
     } finally {
       setSaving(false);
     }
@@ -56,7 +72,7 @@ export default function ImportScreen() {
         placeholder="Paste bank SMS here..."
         placeholderTextColor="#444"
         value={smsText}
-        onChangeText={(t) => { setSmsText(t); setParsed(null); }}
+        onChangeText={t => { setSmsText(t); setParsed(null); }}
         multiline
         numberOfLines={5}
       />
@@ -71,7 +87,7 @@ export default function ImportScreen() {
 
       {parsed && (
         <View style={styles.result}>
-          <Text style={styles.resultTitle}>✅ Transaction Detected</Text>
+          <Text style={styles.resultTitle}>Transaction Detected</Text>
           <Row label="Amount" value={`₹${parsed.amount.toLocaleString('en-IN')}`} accent="#43e97b" />
           <Row label="Merchant" value={parsed.merchant} />
           <Row label="Category" value={parsed.category} />
@@ -84,13 +100,15 @@ export default function ImportScreen() {
           >
             {saving
               ? <ActivityIndicator color="#000" />
-              : <Text style={[styles.btnText, { color: '#000' }]}>💾 Save Transaction</Text>
+              : <Text style={[styles.btnText, { color: '#000' }]}>
+                  💾 Save Transaction
+                </Text>
             }
           </TouchableOpacity>
         </View>
       )}
 
-      <Text style={styles.sampleTitle}>📱 Try a Sample SMS</Text>
+      <Text style={styles.sampleTitle}>Try a Sample SMS</Text>
       {SAMPLE_SMS.map((s, i) => (
         <TouchableOpacity
           key={i}
@@ -117,21 +135,33 @@ function Row({ label, value, accent }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0f', padding: 16 },
-  header: { fontSize: 28, fontWeight: '800', color: '#fff', marginTop: 52, marginBottom: 4 },
+  header: {
+    fontSize: 28, fontWeight: '800', color: '#fff',
+    marginTop: 52, marginBottom: 4,
+  },
   sub: { color: '#555', fontSize: 14, marginBottom: 20 },
   input: {
     backgroundColor: '#141420', color: '#fff', borderRadius: 14,
     padding: 16, fontSize: 13, borderWidth: 1, borderColor: '#2a2a4a',
     minHeight: 110, textAlignVertical: 'top', marginBottom: 14,
   },
-  btn: { backgroundColor: '#6c63ff', borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 8 },
+  btn: {
+    backgroundColor: '#6c63ff', borderRadius: 14,
+    padding: 16, alignItems: 'center', marginBottom: 8,
+  },
   btnDisabled: { opacity: 0.4 },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  result: { backgroundColor: '#141420', borderRadius: 16, padding: 18, marginTop: 8, borderWidth: 1, borderColor: '#2a2a4a' },
+  result: {
+    backgroundColor: '#141420', borderRadius: 16, padding: 18,
+    marginTop: 8, borderWidth: 1, borderColor: '#2a2a4a',
+  },
   resultTitle: { color: '#fff', fontWeight: '700', fontSize: 16, marginBottom: 14 },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   rowLabel: { color: '#666', fontSize: 14 },
-  rowValue: { color: '#fff', fontWeight: '600', fontSize: 14, maxWidth: '60%', textAlign: 'right' },
+  rowValue: {
+    color: '#fff', fontWeight: '600', fontSize: 14,
+    maxWidth: '60%', textAlign: 'right',
+  },
   sampleTitle: { color: '#444', fontSize: 13, marginTop: 28, marginBottom: 10 },
   sampleChip: {
     backgroundColor: '#141420', borderRadius: 10, padding: 12,
